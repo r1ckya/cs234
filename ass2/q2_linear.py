@@ -21,7 +21,7 @@ class Linear(DQN):
         data during training.
         """
         # this information might be useful
-        state_shape = list(self.env.observation_space.shape)
+        h, w, c = self.env.observation_space.shape
 
         ##############################################################
         """
@@ -47,14 +47,13 @@ class Linear(DQN):
             Check the use of None in the dimension for tensorflow placeholders.
             You can also use the state_shape computed above.
         """
-        ##############################################################
-        ################YOUR CODE HERE (6-15 lines) ##################
 
-        pass
-
-        ##############################################################
-        ######################## END YOUR CODE #######################
-
+        self.s = tf.placeholder(shape=[None, h, w, c * self.config.state_history], dtype=tf.uint8, name='state')
+        self.a = tf.placeholder(shape=[None], dtype=tf.int32, name='action')
+        self.r = tf.placeholder(shape=[None], dtype=tf.float32, name='reward')
+        self.sp = tf.placeholder(shape=[None, h, w, c * self.config.state_history], dtype=tf.uint8, name='next_state')
+        self.done_mask = tf.placeholder(shape=[None], dtype=tf.bool, name='done_mask')
+        self.lr = tf.placeholder(shape=[], dtype=tf.float32, name='lr')
 
     def get_q_values_op(self, state, scope, reuse=False):
         """
@@ -85,14 +84,10 @@ class Linear(DQN):
 
             - Make sure to also specify the scope and reuse
         """
-        ##############################################################
-        ################ YOUR CODE HERE - 2-3 lines ##################
 
-        pass
-
-        ##############################################################
-        ######################## END YOUR CODE #######################
-
+        with tf.variable_scope(scope, reuse=reuse):
+            flat = tf.layers.flatten(state, name='flat')
+            out = tf.layers.dense(flat, num_actions, name='out')
         return out
 
 
@@ -129,14 +124,10 @@ class Linear(DQN):
 
         (be sure that you set self.update_target_op)
         """
-        ##############################################################
-        ################### YOUR CODE HERE - 5-10 lines #############
 
-        pass
-
-        ##############################################################
-        ######################## END YOUR CODE #######################
-
+        q_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, q_scope)
+        target_q_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, target_q_scope)
+        self.update_target_op = tf.group(*[target_q_var.assign(q_var) for target_q_var, q_var in zip(target_q_vars, q_vars)])
 
     def add_loss_op(self, q, target_q):
         """
@@ -168,14 +159,11 @@ class Linear(DQN):
                 - tf.squared_difference
                 - tf.reduce_mean
         """
-        ##############################################################
-        ##################### YOUR CODE HERE - 4-5 lines #############
 
-        pass
-
-        ##############################################################
-        ######################## END YOUR CODE #######################
-
+        mask = tf.cast(tf.logical_not(self.done_mask), dtype=tf.float32)
+        Q_samp = self.r + self.config.gamma * mask * tf.reduce_max(target_q, axis=1)
+        Q = tf.reduce_sum(tf.one_hot(self.a, num_actions) * q, axis=1)
+        self.loss = tf.reduce_mean(tf.squared_difference(Q_samp, Q))
 
     def add_optimizer_op(self, scope):
         """
@@ -205,14 +193,14 @@ class Linear(DQN):
 
              you can access config variables by writing self.config.variable_name
         """
-        ##############################################################
-        #################### YOUR CODE HERE - 8-12 lines #############
 
-        pass
-
-        ##############################################################
-        ######################## END YOUR CODE #######################
-
+        adam = tf.train.AdamOptimizer(learning_rate=self.lr)
+        scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+        grads_and_vars = adam.compute_gradients(self.loss, scope_vars)
+        if self.config.grad_clip:
+            grads_and_vars = [(tf.clip_by_norm(g, self.config.clip_val), v) for g, v in grads_and_vars]
+        self.train_op = adam.apply_gradients(grads_and_vars)
+        self.grad_norm = tf.global_norm([g for g, v in grads_and_vars])
 
 
 if __name__ == '__main__':

@@ -26,18 +26,13 @@ class LinearSchedule(object):
         """
         ##############################################################
         """
-        TODO: modify self.epsilon such that 
-			  it is a linear interpolation from self.eps_begin to 
+        TODO: modify self.epsilon such that
+			  it is a linear interpolation from self.eps_begin to
 			  self.eps_end as t goes from 0 to self.nsteps
 			  For t > self.nsteps self.epsilon remains constant
         """
-        ##############################################################
-        ################ YOUR CODE HERE - 3-4 lines ################## 
 
-        pass
-
-        ##############################################################
-        ######################## END YOUR CODE ############## ########
+        self.epsilon = self.eps_end + max(0, self.nsteps - t) / self.nsteps * self.eps_begin
 
 
 class LinearExploration(LinearSchedule):
@@ -61,7 +56,7 @@ class LinearExploration(LinearSchedule):
         Returns a random action with prob epsilon, otherwise returns the best_action
 
         Args:
-            best_action: int 
+            best_action: int
                 best action according some policy
         Returns:
             an action
@@ -73,23 +68,20 @@ class LinearExploration(LinearSchedule):
 
                 you can access the environment via self.env
 
-                you may use env.action_space.sample() to generate 
-                a random action        
+                you may use env.action_space.sample() to generate
+                a random action
         """
-        ##############################################################
-        ################ YOUR CODE HERE - 4-5 lines ##################
 
-        pass
-
-        ##############################################################
-        ######################## END YOUR CODE #######################
-
+        if np.random.rand() < self.epsilon:
+            return self.env.action_space.sample()
+        else:
+            return best_action
 
 
 def test1():
     env = EnvTest((5, 5, 1))
     exp_strat = LinearExploration(env, 1, 0, 10)
-    
+
     found_diff = False
     for i in range(10):
         rnd_act = exp_strat.get_action(0)
