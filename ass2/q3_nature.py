@@ -54,11 +54,15 @@ class NatureQN(Linear):
         """
 
         with tf.variable_scope(scope, reuse=reuse):
-            x = tf.layers.conv2d(state, 16, 8, strides=4, activation=tf.nn.relu)
-            x = tf.layers.conv2d(x, 32, 4, strides=2, activation=tf.nn.relu)
-            x = tf.layers.flatten(x)
-            x = tf.layers.dense(x, 256, activation=tf.nn.relu)
-            out = tf.layers.dense(x, num_actions)
+            x = state
+            x = layers.conv2d(x, 32, 8, stride=4, activation_fn=tf.nn.relu)
+            x = layers.conv2d(x, 32, 3, stride=1, activation_fn=tf.nn.relu)
+            x = layers.conv2d(x, 64, 4, stride=2, activation_fn=tf.nn.relu)
+            x = layers.conv2d(x, 64, 3, stride=1, activation_fn=tf.nn.relu)
+            x = layers.flatten(x)
+            x = layers.fully_connected(x, 256, activation_fn=tf.nn.relu)
+            x = layers.fully_connected(x, num_actions, activation_fn=None)
+            out = x
         return out
 
 
